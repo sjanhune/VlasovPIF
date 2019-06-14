@@ -23,7 +23,7 @@ export to_grid
 
 
 
-function eval_fourier_modes{T}(arg::T, N::Int)
+function eval_fourier_modes(arg::T, N::Int) where {T}
     mode=Array{Complex{T}}(N)
     psin1=(cos(arg)+ im*sin(arg))
     psin=one(Complex{T})
@@ -34,8 +34,8 @@ function eval_fourier_modes{T}(arg::T, N::Int)
      return mode
 end
 
-function eval_fourier_modes{T}(arg::T, N::Int,
-                           mode::Array{Complex{T},1})
+function eval_fourier_modes(arg::T, N::Int,
+                           mode::Array{Complex{T},1}) where {T}
     psin1::Complex{T}=cis(arg)
     psin::Complex{T}=one(Complex{T})
     @inbounds for kdx=1:N
@@ -45,14 +45,14 @@ function eval_fourier_modes{T}(arg::T, N::Int,
      nothing
 end
 
-function eval_fourier_modes0{T<:AbstractFloat}(arg::T, N::Int )
+function eval_fourier_modes0(arg::T, N::Int ) where {T<:AbstractFloat}
     mode=Array{Complex{T}}(N+1)
     eval_fourier_modes0(arg,N,mode)
     return mode
 end
 
-function eval_fourier_modes0{T<:AbstractFloat}(arg::T, N::Int,
-                           mode::Array{Complex{T},1})
+function eval_fourier_modes0(arg::T, N::Int,
+                           mode::Array{Complex{T},1}) where {T<:AbstractFloat}
     psin1::Complex{T}=cis(arg)
     psin::Complex{T}=one(Complex{T})
     mode[1]=psin
@@ -63,10 +63,10 @@ function eval_fourier_modes0{T<:AbstractFloat}(arg::T, N::Int,
      nothing
 end
 
-function eval_fourier_modes2{T<:AbstractFloat}(arg::T, N::Int)
+function eval_fourier_modes2(arg::T, N::Int) where {T<:AbstractFloat}
     mode=Array{Complex{T}}(2*N+1)
     N0=N+1
-    const psin1::Complex{T}=cis(arg)
+    psin1::Complex{T}=cis(arg)
     psin::Complex{T}=one(Complex{T})
     mode[N0]=one(Complex{T})
     @inbounds for kdx=1:N
@@ -77,11 +77,11 @@ function eval_fourier_modes2{T<:AbstractFloat}(arg::T, N::Int)
     return mode
 end
 
-function eval_fourier_modes2{T<:AbstractFloat}(arg::T, N::Int,
-                           mode::Array{Complex{T},1})
+function eval_fourier_modes2(arg::T, N::Int,
+                           mode::Array{Complex{T},1}) where {T<:AbstractFloat}
     N0::Int=N+1
     mode[N0]=one(Complex{T})
-    const psin1::Complex{T}=cis(arg)
+    psin1::Complex{T}=cis(arg)
     psin::Complex{T}=one(Complex{T})
     @inbounds for kdx=1:N
        psin=psin*psin1
@@ -90,7 +90,7 @@ function eval_fourier_modes2{T<:AbstractFloat}(arg::T, N::Int,
      end
      nothing
 end
-function sumcnj{T}(a::Complex{T},b::Complex{T})
+function sumcnj(a::Complex{T},b::Complex{T}) where {T}
   c::T= (real(a)*real(b)-imag(a)*imag(b))*2
   return c
 end
@@ -110,7 +110,7 @@ end
 
 
 # General structure for a 3d PIF field solver
-type pm_pif3d{T}
+mutable struct pm_pif3d{T}
   Nx1::Int
   Nx2::Int
   Nx3::Int
@@ -132,9 +132,9 @@ type pm_pif3d{T}
   N2n::Int
   N3n::Int
 
-  function pm_pif3d{T}(Nx1::Int,Nx2::Int,Nx3::Int,
-                                L1::T,L2::T,L3::T) where T<:AbstractFloat
-    self=new(Nx1,Nx2,Nx3,L1,L2,L3,Nx1+1,Nx2*2+1,Nx3*2+1)
+  function pm_pif3d(Nx1::Int,Nx2::Int,Nx3::Int,
+                                L1::T,L2::T,L3::T) where {T<:AbstractFloat}
+    self=new{typeof(L1)}(Nx1,Nx2,Nx3,L1,L2,L3,Nx1+1,Nx2*2+1,Nx3*2+1)
 
     self.kx1=2*pi/self.L1
     self.kx2=2*pi/self.L2
@@ -145,7 +145,7 @@ type pm_pif3d{T}
     self.K1,self.K2,self.K3=getK(self)
     return self
   end
-  function pm_pif3d{T}(Nx1::Int,Nx2::Int,Nx3::Int,L::T) where T
+  function pm_pif3d(Nx1::Int,Nx2::Int,Nx3::Int,L::T) where {T}
      pm_pif3d(Nx1,Nx2,Nx3,L,L,L)
   end
 end
@@ -160,11 +160,11 @@ pm_pif3d(Nx1::Int,Nx2::Int,Nx3::Int,L::T) where
 
 
 
-function eval_basis2{T}(self::pm_pif3d, x1n::T,x2n::T,  x3n::T,
+function eval_basis2(self::pm_pif3d, x1n::T,x2n::T,  x3n::T,
                             psin::Array{Complex{T},3},
                             psi1::Array{Complex{T},1},
                             psi2::Array{Complex{T},1},
-                            psi3::Array{Complex{T},1})
+                            psi3::Array{Complex{T},1}) where {T}
 
   eval_fourier_modes0(x1n*self.kx1, self.Nx1,psi1)
   eval_fourier_modes2(x2n*self.kx2, self.Nx2,psi2)
@@ -183,8 +183,8 @@ function eval_basis2{T}(self::pm_pif3d, x1n::T,x2n::T,  x3n::T,
 
 end
 
-@inline @inbounds function eval_basis{T}(self::pm_pif3d, x1n::T,x2n::T,  x3n::T,
-                            psin::Array{Complex{T},3})
+@inline @inbounds function eval_basis(self::pm_pif3d, x1n::T,x2n::T,  x3n::T,
+                            psin::Array{Complex{T},3}) where {T}
 
 
   mode1::Complex{T}=cis(x1n*self.kx1)
@@ -243,11 +243,11 @@ end
     end
   end
 end
-@inline @inbounds function eval_basis{T}(self::pm_pif3d{T}, x1n::T,x2n::T,  x3n::T,
-                            psin::Array{Complex{T},3})
-  psi1=Array{Complex{T}}(self.N1)
-  psi2=Array{Complex{T}}(self.N2)
-  psi3=Array{Complex{T}}(self.N3)
+@inline @inbounds function eval_basis(self::pm_pif3d{T}, x1n::T,x2n::T,  x3n::T,
+                            psin::Array{Complex{T},3}) where {T}
+  psi1=Array{Complex{T}}(undef,self.N1)
+  psi2=Array{Complex{T}}(undef,self.N2)
+  psi3=Array{Complex{T}}(undef,self.N3)
 
   eval_fourier_modes0(x1n*self.kx1, self.Nx1,psi1)
   eval_fourier_modes2(x2n*self.kx2, self.Nx2,psi2)
@@ -269,13 +269,13 @@ end
 
 # Definite Integral from xIn to x_n on axis I
 # The other components remain constant
-function eval_basis_defint{T}(self::pm_pif3d{T}, x1n::T,x2n::T, x3n::T,x_n::T,
-                          axis::Int,psin::Array{Complex{T},3})
+function eval_basis_defint(self::pm_pif3d{T}, x1n::T,x2n::T, x3n::T,x_n::T,
+                          axis::Int,psin::Array{Complex{T},3}) where {T}
 
 
-  psi1=Array{Complex{T}}(self.N1)
-  psi2=Array{Complex{T}}(self.N2)
-  psi3=Array{Complex{T}}(self.N3)
+  psi1=Array{Complex{T}}(undef,self.N1)
+  psi2=Array{Complex{T}}(undef,self.N2)
+  psi3=Array{Complex{T}}(undef,self.N3)
 
   eval_fourier_modes0(x1n*2*pi/self.L1, self.Nx1,psi1)
   eval_fourier_modes2(x2n*2*pi/self.L2, self.Nx2,psi2)
@@ -315,13 +315,13 @@ end
 
 # Indefinite Integral from xIn to x_n on axis I
 # The other components remain constant
-function eval_basis_int{T}(self::pm_pif3d{T}, x1n::T,x2n::T, x3n::T,
-                          axis::Int,psin::Array{Complex{T},3})
+function eval_basis_int(self::pm_pif3d{T}, x1n::T,x2n::T, x3n::T,
+                          axis::Int,psin::Array{Complex{T},3}) where {T}
 
 
-  psi1=Array{Complex{T}}(self.N1)
-  psi2=Array{Complex{T}}(self.N2)
-  psi3=Array{Complex{T}}(self.N3)
+  psi1=Array{Complex{T}}(undef,self.N1)
+  psi2=Array{Complex{T}}(undef,self.N2)
+  psi3=Array{Complex{T}}(undef,self.N3)
 
   eval_fourier_modes0(x1n*2*pi/self.L1, self.Nx1,psi1)
   eval_fourier_modes2(x2n*2*pi/self.L2, self.Nx2,psi2)
@@ -360,8 +360,8 @@ function eval_basis_int{T}(self::pm_pif3d{T}, x1n::T,x2n::T, x3n::T,
 end
 
 # evaluate a scalar function with coefficients F
-@inbounds function eval_scalar{T}(self::pm_pif3d, psin::Array{Complex{T},3},
-                   F::Array{Complex{T},3} )
+@inbounds function eval_scalar(self::pm_pif3d, psin::Array{Complex{T},3},
+                   F::Array{Complex{T},3} ) where {T}
   # vali::Complex{T}=0
   # val::T=0
   # for kdx=1:self.N3
@@ -389,8 +389,8 @@ end
   return valr
 end
 # avoiding complex numbers yields a bad memory access pattern
-@inbounds function eval_scalar2{T}(self::pm_pif3d, psin::Array{Complex{T},3},
-                     F::Array{Complex{T},3} )
+@inbounds function eval_scalar2(self::pm_pif3d, psin::Array{Complex{T},3},
+                     F::Array{Complex{T},3} ) where {T}
   val::T=real(psin[1,self.N2n,self.N3n]*F[1,self.N2n,self.N3n])
   for jdx=1:self.Nx2
       val+=real( psin[1,self.N2n+jdx,self.N3n]*F[1,self.N2n+jdx, self.N3n]
@@ -443,9 +443,9 @@ end
 
 
 # evaluate a scalar function with coefficients F
-@inbounds function eval_scalar_gradient{T}(self::pm_pif3d,
+@inbounds function eval_scalar_gradient(self::pm_pif3d,
           psin::Array{Complex{T},3},
-                        F::Array{Complex{T},3},gradF::Array{Complex{T},1})
+                        F::Array{Complex{T},3},gradF::Array{Complex{T},1}) where {T}
       gradF[:]=0
        for kdx=1:self.N3
           dx3::T=( kdx-self.N3n)*pm.kx3
@@ -466,9 +466,9 @@ end
 
   #gradF[:].im=0.0
 end
-function eval_scalar_gradient{T}(self::pm_pif3d,
+function eval_scalar_gradient(self::pm_pif3d,
           psin::Array{Complex{T},3},
-                        F::Array{Complex{T},3})
+                        F::Array{Complex{T},3}) where {T}
   gradF=Array{Complex{T}}(3)
   eval_scalar_gradient(self,psin,F,gradF)
   return real(gradF)
@@ -486,37 +486,37 @@ end
 #      return psi_int
 # end
 # using Devectorize
-function integrate_Hp{T}(self::pm_pif3d{T},x1n::Array{T,1},x2n::Array{T,1},
+function integrate_Hp(self::pm_pif3d{T},x1n::Array{T,1},x2n::Array{T,1},
                        x3n::Array{T,1},
                        v1n::Array{T,1},v2n::Array{T,1}, v3n::Array{T,1},
                       qn::Array{T,1}, mn::Array{T,1},wn::Array{T,1},
           J1::Array{Complex{T},3},J2::Array{Complex{T},3},J3::Array{Complex{T},3},
-          B1::Array{Complex{T},3},B2::Array{Complex{T},3}, B3::Array{Complex{T},3}, dt::T)
+          B1::Array{Complex{T},3},B2::Array{Complex{T},3}, B3::Array{Complex{T},3}, dt::T) where {T}
   Np::Int=length(x1n)
 
-  psi1=Array{Complex{T}}(self.N1,self.N2,self.N3)
-  psi0=Array{Complex{T}}(self.N1,self.N2,self.N3)
+  psi1=Array{Complex{T}}(undef,self.N1,self.N2,self.N3)
+  psi0=Array{Complex{T}}(undef,self.N1,self.N2,self.N3)
   # =Array{Complex{T}}(self.N1,self.N2,self.N3)
 
-  psix1=Array{Complex{T}}(self.N1)
-  psix2=Array{Complex{T}}(self.N2)
-  psix3=Array{Complex{T}}(self.N3)
+  psix1=Array{Complex{T}}(undef,self.N1)
+  psix2=Array{Complex{T}}(undef,self.N2)
+  psix3=Array{Complex{T}}(undef,self.N3)
 
   #Fourier stem function Integral
-  DK1=Array{Complex{T}}(self.N1)
+  DK1=Array{Complex{T}}(undef,self.N1)
   DK1[:]=getK(self,1)
-  DK1=1./(im*DK1)
+  DK1=1 ./(im*DK1)
   DK1[self.N1n]=0.0
-  DK2=Array{Complex{T}}(self.N2)
+  DK2=Array{Complex{T}}(undef,self.N2)
   DK2[:]=getK(self,2)
-  DK2=1./(im*DK2)
+  DK2=1 ./(im*DK2)
   DK2[self.N2n]=0.0
-  DK3=Array{Complex{T}}(self.N3)
+  DK3=Array{Complex{T}}(undef,self.N3)
   DK3[:]=getK(self,3)
-  DK3=1./(im*DK3)
+  DK3=1 ./(im*DK3)
   DK3[self.N3n]=0.0
 
-  vol::T=1./(self.L1*self.L2*self.L3)
+  vol::T=1 ./(self.L1*self.L2*self.L3)
 
   for pdx=1:Np
     w::T=wn[pdx]*qn[pdx]*vol #Accumulate<d weight with fourier normalization
@@ -703,19 +703,19 @@ end
 
 
 
-  function push_Hp1{T}(self::pm_pif3d,
+  function push_Hp1(self::pm_pif3d,
 
   x1::T, x2::T, x3::T, v1::T, v2::T , v3::T, q::T, m::T, w::T,
             psi0::Array{Complex{T},3}, psi1::Array{Complex{T},3}, dt::T,
-            J1::Array{Complex{T},3},B2::Array{Complex{T},3},B3::Array{Complex{T},3})
+            J1::Array{Complex{T},3},B2::Array{Complex{T},3},B3::Array{Complex{T},3}) where {T}
 
     x1+=dt*v1
     psi1=copy(psi0).*reshape(eval_fourier_modes0(dt*v1*2*pi/self.L1,self.Nx1),
                                self.N1,1,1)
-    psi1=Array{Complex{T}}(self.N1,self.N2,self.N3)
+    psi1=Array{Complex{T}}(undef,self.N1,self.N2,self.N3)
     eval_basis(self,x1,x2,x3,psi1)
     K=getK(self,1)
-    K=1./K
+    K=1 ./K
     K[1]=0.0
     psi0.=(psi1-psi0).*(-reshape(K,self.N1,1,1)*im)
     psi0[1,:,:]=(dt*v1).*psi1[1,:,:]
@@ -732,15 +732,15 @@ end
 
 
 
-function push_Hp2{T}(self::pm_pif3d, x1::T, x2::T, x3::T, v1::T, v2::T , v3::T, q::T, m::T, w::T,
+function push_Hp2(self::pm_pif3d, x1::T, x2::T, x3::T, v1::T, v2::T , v3::T, q::T, m::T, w::T,
             psi0::Array{Complex{T},3},  dt::T,
-            J2::Array{Complex{T},3},B1::Array{Complex{T},3},B3::Array{Complex{T},3})
+            J2::Array{Complex{T},3},B1::Array{Complex{T},3},B3::Array{Complex{T},3}) where {T}
 
     x2+=dt*v2
-    psi1=Array{Complex{T}}(self.N1,self.N2,self.N3)
+    psi1=Array{Complex{T}}(undef,self.N1,self.N2,self.N3)
     eval_basis(self,x1,x2,x3,psi1)
     K=getK(self,2)
-    K=1./K
+    K=1 ./K
     K[self.Nx2+1]=0.0
     psi0.=(psi1-psi0).*(-reshape(K,1,self.N2,1)*im)
     psi0[:,self.Nx2+1,:]=(dt*v2).*psi1[:,self.Nx2+1,:]
@@ -752,15 +752,15 @@ function push_Hp2{T}(self::pm_pif3d, x1::T, x2::T, x3::T, v1::T, v2::T , v3::T, 
     psi0[:]=psi1[:]
     return x2,v1,v3
 end
-function push_Hp3{T}(self::pm_pif3d, x1::T, x2::T, x3::T, v1::T, v2::T , v3::T, q::T, m::T, w::T,
+function push_Hp3(self::pm_pif3d, x1::T, x2::T, x3::T, v1::T, v2::T , v3::T, q::T, m::T, w::T,
             psi0::Array{Complex{T},3},  dt::T,
-            J3::Array{Complex{T},3},B1::Array{Complex{T},3},B2::Array{Complex{T},3})
+            J3::Array{Complex{T},3},B1::Array{Complex{T},3},B2::Array{Complex{T},3}) where {T}
 
     x3+=dt*v3
-    psi1=Array{Complex{T}}(self.N1,self.N2,self.N3)
+    psi1=Array{Complex{T}}(undef,self.N1,self.N2,self.N3)
     eval_basis(self,x1,x2,x3,psi1)
     K=getK(self,3)
-    K=1./K
+    K=1 ./K
     K[self.Nx3+1]=0.0
     psi0.=(psi1-psi0).*(-reshape(K,1,1,self.N3)*im)
     psi0[:,:,self.Nx3+1]=(dt*v2).*psi1[:,:,self.Nx3+1]
@@ -777,9 +777,9 @@ end
 
 
 #rho from particles
-@inbounds function accum_osde2{T <:AbstractFloat}(self::pm_pif3d{T},
+@inbounds function accum_osde2(self::pm_pif3d{T},
            x1n::Array{T,1},x2n::Array{T,1},  x3n::Array{T,1},
-           wn::Array{T,1})
+           wn::Array{T,1}) where {T <:AbstractFloat}
   Np::Int=length(x1n)
   @assert Np==length(x2n)
   @assert Np==length(x3n)
@@ -787,7 +787,7 @@ end
 
 
   rhs=zeros(Complex{T},self.N1,self.N2,self.N3)
-  psin=Array{Complex{T}}(self.N1,self.N2,self.N3)
+  psin=Array{Complex{T}}(undef,self.N1,self.N2,self.N3)
 
   for pdx=1:Np
 
@@ -807,17 +807,17 @@ end
 
 
 #rho from particles
-function accum_osde{T <:AbstractFloat}(self::pm_pif3d{T},
+function accum_osde(self::pm_pif3d{T},
            x1n::Array{T,1},x2n::Array{T,1},  x3n::Array{T,1},
-           wn::Array{T,1})
+           wn::Array{T,1}) where {T <:AbstractFloat}
   Np::Int=length(x1n)
   @assert Np==length(x2n)
   @assert Np==length(x3n)
   @assert Np==length(wn)
 
-  psi1=Array{Complex{T}}(self.N1)
-  psi2=Array{Complex{T}}(self.N2)
-  psi3=Array{Complex{T}}(self.N3)
+  psi1=Array{Complex{T}}(undef,self.N1)
+  psi2=Array{Complex{T}}(undef,self.N2)
+  psi3=Array{Complex{T}}(undef,self.N3)
 
   rhs=zeros(Complex{T},self.N1,self.N2,self.N3)
 
@@ -852,18 +852,18 @@ end
 
 
 #Variance of rho from particles, given a rhs
-function accum_osde_var{T}(self::pm_pif3d{T},
+function accum_osde_var(self::pm_pif3d{T},
            rhs::Array{Complex{T},3}, # provide a mean
            x1n::Array{T,1},x2n::Array{T,1},  x3n::Array{T,1},
-           wn::Array{T,1})
+           wn::Array{T,1}) where {T}
   Np=length(x1n)
   @assert Np==length(x2n)
   @assert Np==length(x3n)
   @assert Np==length(wn)
 
-  psi1=Array{Complex{T}}(self.N1)
-  psi2=Array{Complex{T}}(self.N2)
-  psi3=Array{Complex{T}}(self.N3)
+  psi1=Array{Complex{T}}(undef,self.N1)
+  psi2=Array{Complex{T}}(undef,self.N2)
+  psi3=Array{Complex{T}}(undef,self.N3)
 
   rhs_var=zeros(T,self.N1,self.N2,self.N3)
 
@@ -871,7 +871,7 @@ function accum_osde_var{T}(self::pm_pif3d{T},
   k2::T=-2*pi/self.L2
   k3::T=-2*pi/self.L3
 
-  vol::T=1./(self.L1*self.L2*self.L3)
+  vol::T=1 ./(self.L1*self.L2*self.L3)
   @inbounds begin
   for pdx=1:Np
     #Julia is column major
@@ -899,8 +899,8 @@ function accum_osde_var{T}(self::pm_pif3d{T},
 end
 
 # Accumulate on accum_psin
-@inbounds function accum_basis{T}(self::pm_pif3d{T}, psin::Array{Complex{T},3},
-            weight::T, accum_psin::Array{Complex{T},3})
+@inbounds function accum_basis(self::pm_pif3d{T}, psin::Array{Complex{T},3},
+            weight::T, accum_psin::Array{Complex{T},3}) where{T}
   for kdx=1:self.N3
     for jdx=1:self.N2
       @simd for idx=1:self.N1
@@ -910,17 +910,17 @@ end
   end
 end
 #rho for indefinite integration
-function accum_osde_int{T <:AbstractFloat}(self::pm_pif3d{T},
+function accum_osde_int(self::pm_pif3d{T},
            x1n::Array{T,1},x2n::Array{T,1},  x3n::Array{T,1},
-           wn::Array{T,1}, axis::Int)
+           wn::Array{T,1}, axis::Int) where {T <:AbstractFloat}
   Np=length(x1n)
   @assert Np==length(x2n)
   @assert Np==length(x3n)
   @assert Np==length(wn)
 
-  psi1=Array{Complex{T}}(self.N1)
-  psi2=Array{Complex{T}}(self.N2)
-  psi3=Array{Complex{T}}(self.N3)
+  psi1=Array{Complex{T}}(undef,self.N1)
+  psi2=Array{Complex{T}}(undef,self.N2)
+  psi3=Array{Complex{T}}(undef,self.N3)
 
   rhs=zeros(Complex{T},self.N1,self.N2,self.N3)
 
@@ -1041,18 +1041,18 @@ end
 # end
 
 
-function eval_scalar{T}(self::pm_pif3d,
+function eval_scalar(self::pm_pif3d,
            x1n::Array{T,1},x2n::Array{T,1}, x3n::Array{T,1},
-           F::Array{Complex{T},3},Fn::Array{Complex{T},1})
+           F::Array{Complex{T},3},Fn::Array{Complex{T},1}) where {T}
   Np=length(x1n)
   @assert Np==length(x2n)
   @assert Np==length(x3n)
 
   #Fn=zeros(Complex{T},Np)
   Fn[:]=0
-  psi1=Array{Complex{T}}(self.N1)
-  psi2=Array{Complex{T}}(self.N2)
-  psi3=Array{Complex{T}}(self.N3)
+  psi1=Array{Complex{T}}(undef,self.N1)
+  psi2=Array{Complex{T}}(undef,self.N2)
+  psi3=Array{Complex{T}}(undef,self.N3)
   k1=2*pi/self.L1
   k2=2*pi/self.L2
   k3=2*pi/self.L3
@@ -1079,18 +1079,18 @@ function eval_scalar{T}(self::pm_pif3d,
 end
 
 
-@inbounds function eval_scalar{T}(self::pm_pif3d,
+@inbounds function eval_scalar(self::pm_pif3d,
            x1n::Array{T,1},x2n::Array{T,1}, x3n::Array{T,1},
-           F::Array{Complex{T},3},Fn::Array{T,1})
+           F::Array{Complex{T},3},Fn::Array{T,1}) where{T}
   Np=length(x1n)
   @assert Np==length(x2n)
   @assert Np==length(x3n)
 
   #Fn=Array(T,Np)
   #Fn[:]=0
-  psi1=Array{Complex{T}}(self.Nx1)
-  psi2=Array{Complex{T}}(self.Nx2)
-  psi3=Array{Complex{T}}(self.Nx3)
+  psi1=Array{Complex{T}}(undef,self.Nx1)
+  psi2=Array{Complex{T}}(undef,self.Nx2)
+  psi3=Array{Complex{T}}(undef,self.Nx3)
   k1=2*pi/self.L1
   k2=2*pi/self.L2
   k3=2*pi/self.L3
@@ -1178,10 +1178,10 @@ end
 
 
 
-function eval_vectorfield{T}(self::pm_pif3d,
+function eval_vectorfield(self::pm_pif3d,
            x1n::Array{T,1},x2n::Array{T,1}, x3n::Array{T,1},
            F1::Array{Complex{T},3},F2::Array{Complex{T},3},F3::Array{Complex{T},3},
-           F1n::Array{Complex{T},1},F2n::Array{Complex{T},1},F3n::Array{Complex{T},1})
+           F1n::Array{Complex{T},1},F2n::Array{Complex{T},1},F3n::Array{Complex{T},1}) where {T}
   Np=length(x1n)
   @assert Np==length(x2n)
   @assert Np==length(x3n)
@@ -1189,9 +1189,9 @@ function eval_vectorfield{T}(self::pm_pif3d,
   F1n[:]=0.0
   F2n[:]=0
   F3n[:]=0.0
-  psi1=Array{Complex{T}}(self.N1)
-  psi2=Array{Complex{T}}(self.N2)
-  psi3=Array{Complex{T}}(self.N3)
+  psi1=Array{Complex{T}}(undef,self.N1)
+  psi2=Array{Complex{T}}(undef,self.N2)
+  psi3=Array{Complex{T}}(undef,self.N3)
   k1=2*pi/self.L1
   k2=2*pi/self.L2
   k3=2*pi/self.L3
@@ -1223,9 +1223,9 @@ function eval_vectorfield{T}(self::pm_pif3d,
 
 end
 
-@inbounds function eval_scalar{T}(self::pm_pif3d,
+@inbounds function eval_scalar(self::pm_pif3d,
            x1n::Array{T,1},x2n::Array{T,1}, x3n::Array{T,1},
-           F::Array{Array{Complex{T},3},1}, Fn::Array{Array{Complex{T},1},1})
+           F::Array{Array{Complex{T},3},1}, Fn::Array{Array{Complex{T},1},1}) where{T}
   Np=length(x1n)
   @assert Np==length(x2n)
   @assert Np==length(x3n)
@@ -1235,9 +1235,9 @@ end
     Fn[ddx][:].=0.0
   end
 
-  psi1=Array{Complex{T}}(self.N1)
-  psi2=Array{Complex{T}}(self.N2)
-  psi3=Array{Complex{T}}(self.N3)
+  psi1=Array{Complex{T}}(undef,self.N1)
+  psi2=Array{Complex{T}}(undef,self.N2)
+  psi3=Array{Complex{T}}(undef,self.N3)
   k1=2*pi/self.L1
   k2=2*pi/self.L2
   k3=2*pi/self.L3
@@ -1302,8 +1302,8 @@ end
 
 
 
-function solve_poisson!{T}(self::pm_pif3d,
-                      rho::Array{Complex{T},3}, Phi::Array{Complex{T},3})
+function solve_poisson!(self::pm_pif3d,
+                      rho::Array{Complex{T},3}, Phi::Array{Complex{T},3}) where {T}
     K1,K2,K3=getK(self)
      for kdx=1:self.N3
         for jdx=1:self.N2
@@ -1319,14 +1319,14 @@ function solve_poisson!{T}(self::pm_pif3d,
      end
      return Phi
 end
-function solve_poisson{T}(self::pm_pif3d{T}, rho::Array{Complex{T},3})
-  Phi=Array{Complex{T}}(self.N1,self.N2,self.N3)
+function solve_poisson(self::pm_pif3d{T}, rho::Array{Complex{T},3}) where {T}
+  Phi=Array{Complex{T}}(undef,self.N1,self.N2,self.N3)
   solve_poisson!(self,rho,Phi)
   return Phi
 end
 
 
-function solve_gauss{T}(self::pm_pif3d{T}, rho::Array{Complex{T},3} )
+function solve_gauss(self::pm_pif3d{T}, rho::Array{Complex{T},3} ) where {T}
   E1=similar(rho)
   E2=similar(rho)
   E3=similar(rho)
@@ -1334,7 +1334,7 @@ function solve_gauss{T}(self::pm_pif3d{T}, rho::Array{Complex{T},3} )
   return E1,E2,E3
 end
 
-function gauss_error{T}(self::pm_pif3d{T}, rho::Array{Complex{T},3}, E1,E2,E3 )
+function gauss_error(self::pm_pif3d{T}, rho::Array{Complex{T},3}, E1,E2,E3 ) where {T}
   K1,K2,K3=getK2(self)
   rho2=similar(rho)
   rho2[:]=rho[:]
@@ -1342,7 +1342,7 @@ function gauss_error{T}(self::pm_pif3d{T}, rho::Array{Complex{T},3}, E1,E2,E3 )
   return maximum(abs.(E1.*(im*K1)+E2.*(im*K2)+E3.*(im*K3)-rho2))
  end
 
-function solve_gauss!{T}(self::pm_pif3d{T}, rho::Array{Complex{T},3}, E1,E2,E3   )
+function solve_gauss!(self::pm_pif3d{T}, rho::Array{Complex{T},3}, E1,E2,E3) where {T}
   Phi=solve_poisson(self,rho)
   K1,K2,K3=getK2(self)
   E1::Array{Complex{T},3}=-Phi*im.*K1
@@ -1351,10 +1351,10 @@ function solve_gauss!{T}(self::pm_pif3d{T}, rho::Array{Complex{T},3}, E1,E2,E3  
 end
 
 
-import Base.LinAlg: gradient
+# import Base.LinAlg: gradient
 
 # Gradient of a scalar function
-function gradient{T}(self::pm_pif3d{T}, F::Array{Complex{T},3})
+function gradient(self::pm_pif3d{T}, F::Array{Complex{T},3}) where {T}
   K1,K2,K3=getK2(self)
   DF1::Array{Complex{T},3}=(F*im).*K1
   DF2::Array{Complex{T},3}=(F*im).*K2
@@ -1363,36 +1363,36 @@ function gradient{T}(self::pm_pif3d{T}, F::Array{Complex{T},3})
 end
 
 import Base: div
-function div{T}(self::pm_pif3d{T}, F::Array{Complex{T},3})
+function div(self::pm_pif3d{T}, F::Array{Complex{T},3}) where {T}
   DF1,DF2,DF3=gradient(pm_pif3d, F)
   return DF1.+DF2.+DF3
 end
 
 
 
-function curl{T}(self::pm_pif3d, F1::Array{Complex{T},3},
-              F2::Array{Complex{T},3},F3::Array{Complex{T},3} )
+function curl(self::pm_pif3d, F1::Array{Complex{T},3},
+              F2::Array{Complex{T},3},F3::Array{Complex{T},3} ) where {T}
     K1,K2,K3=getK2(self)
     return im*(K2.*F3 - K3.*F2), im*(K3.*F1 - K1.*F3), im*(K1.*F2 - K2.*F1)
 
 end
 
 
-function H1seminorm{T}(self::pm_pif3d{T},F::Array{Complex{T},3} )
+function H1seminorm(self::pm_pif3d{T},F::Array{Complex{T},3} ) where {T}
   K1,K2,K3=getK2(self)
   return 2.0*sum((abs.(F.*K1).^2+abs.(F.*K2).^2
              +abs.(F.*K2).^2)[:])*self.L1*self.L2*self.L3
 end
 
 
-function L2norm{T}(self::pm_pif3d{T},F::Array{Complex{T},3}  )
+function L2norm(self::pm_pif3d{T},F::Array{Complex{T},3}  ) where {T}
   L2=sum(abs.(F[:]).^2)*2.0- sum((abs.(F[self.N1n,:,:]).^2)[:])
   L2*=self.L1*self.L2*self.L3
   return L2
 end
 
-import Base.LinAlg: dot
-function dot{T}(self::pm_pif3d{T}, A::Array{Complex{T},3},B::Array{Complex{T},3})
+# import Base.LinAlg: dot
+function dot(self::pm_pif3d{T}, A::Array{Complex{T},3},B::Array{Complex{T},3}) where {T}
     ab=(sum(real(conj(A[2:end,:,:])).*real(B[2:end,:,:]))-sum(imag(conj(A[2:end,:,:])).*imag(B[2:end,:,:])))*2
           +imag(sum(conj(A[self.N1n,:,:]).*B[self.N1n,:,:]))
     return ab*self.L1*self.L2*self.L3
@@ -1400,10 +1400,10 @@ end
 
 
 # Integrate Ampere equation from 0 to dt
-function integrate_H_B{T}(self::pm_pif3d{T}, E1::Array{Complex{T},3},
+function integrate_H_B(self::pm_pif3d{T}, E1::Array{Complex{T},3},
            E2::Array{Complex{T},3},E3::Array{Complex{T},3},
            B1::Array{Complex{T},3},B2::Array{Complex{T},3},
-           B3::Array{Complex{T},3} ,c::T, dt::T)
+           B3::Array{Complex{T},3} ,c::T, dt::T) where {T}
 
   F1,F2,F3=curl(self, B1,B2,B3)
   E1.+= dt*F1*c^2
@@ -1425,10 +1425,10 @@ end
 
 
 # Integrate Ampere equation from 0 to dt
-function integrate_Faraday{T}(self::pm_pif3d{T}, E1::Array{Complex{T},3},
+function integrate_Faraday(self::pm_pif3d{T}, E1::Array{Complex{T},3},
            E2::Array{Complex{T},3},E3::Array{Complex{T},3},
            B1::Array{Complex{T},3},B2::Array{Complex{T},3},
-           B3::Array{Complex{T},3} ,dt::T)
+           B3::Array{Complex{T},3} ,dt::T) where {T}
   F1,F2,F3=curl(self, E1,E2,E3)
   B1.-=dt*F1
   B2.-=dt*F2
@@ -1436,12 +1436,12 @@ function integrate_Faraday{T}(self::pm_pif3d{T}, E1::Array{Complex{T},3},
 end
 
 
-@inbounds function integrate_H_E{T}(self::pm_pif3d{T}, E1::Array{Complex{T},3},
+@inbounds function integrate_H_E(self::pm_pif3d{T}, E1::Array{Complex{T},3},
            E2::Array{Complex{T},3},E3::Array{Complex{T},3},
            B1::Array{Complex{T},3},B2::Array{Complex{T},3},B3::Array{Complex{T},3},
            x1n::Array{T,1},x2n::Array{T,1}, x3n::Array{T,1},
            v1n::Array{T,1},v2n::Array{T,1}, v3n::Array{T,1},
-           qn::Array{T,1}, mn::Array{T,1}, dt::T)
+           qn::Array{T,1}, mn::Array{T,1}, dt::T) where {T}
 
   integrate_H_E(self,E1,E2,E3,x1n,x2n,x3n,v1n,v2n,v3n,qn,mn,dt)
 
@@ -1450,22 +1450,22 @@ end
 
 
 #
-@inbounds function integrate_H_E{T}(self::pm_pif3d{T}, E::Array{Complex{T},3},
+@inbounds function integrate_H_E(self::pm_pif3d{T}, E::Array{Complex{T},3},
                               x1n::Array{T,1},x2n::Array{T,1}, x3n::Array{T,1},
                         vn::Array{T,1},qn::Array{T,1}, mn::Array{T,1},
-                                         dt::T)
+                                         dt::T) where {T}
 
   Np=length(x1n)
   @assert Np==length(x2n)
   @assert Np==length(x3n)
 
-  psi1=Array{Complex{T}}(self.N1)
-  psi2=Array{Complex{T}}(self.N2)
-  psi3=Array{Complex{T}}(self.N3)
+  psi1=Array{Complex{T}}(undef,self.N1)
+  psi2=Array{Complex{T}}(undef,self.N2)
+  psi3=Array{Complex{T}}(undef,self.N3)
   k1::T=2*pi/self.L1
   k2::T=2*pi/self.L2
   k3::T=2*pi/self.L3
-  #psi0=Array{Complex{T}}(self.N1,self.N2,self.N3)
+  #psi0=Array{Complex{T}}(undef,self.N1,self.N2,self.N3)
   for pdx=1:Np
     eval_fourier_modes0(x1n[pdx]*k1, self.Nx1,psi1)
     eval_fourier_modes2(x2n[pdx]*k2, self.Nx2,psi2)
@@ -1491,21 +1491,21 @@ end
 
 
 
-@inbounds function integrate_H_E{T}(self::pm_pif3d{T}, E1::Array{Complex{T},3},
+@inbounds function integrate_H_E(self::pm_pif3d{T}, E1::Array{Complex{T},3},
                           E2::Array{Complex{T},3},  E3::Array{Complex{T},3},
                               x1n::Array{T,1},x2n::Array{T,1}, x3n::Array{T,1},
                         v1n::Array{T,1},v2n::Array{T,1}, v3n::Array{T,1},
                               qn::Array{T,1}, mn::Array{T,1},
-                                         dt::T)
+                                         dt::T) where {T}
 
   Np=length(x1n)
   @assert Np==length(x2n)
   @assert Np==length(x3n)
   #Fn=zeros(Complex{T},Np)
 
-  psi1=Array{Complex{T}}(self.N1)
-  psi2=Array{Complex{T}}(self.N2)
-  psi3=Array{Complex{T}}(self.N3)
+  psi1=Array{Complex{T}}(undef,self.N1)
+  psi2=Array{Complex{T}}(undef,self.N2)
+  psi3=Array{Complex{T}}(undef,self.N3)
   k1::T=2*pi/self.L1
   k2::T=2*pi/self.L2
   k3::T=2*pi/self.L3
@@ -1551,7 +1551,7 @@ end
 
 
 
-function test_eval_basis{T}(pm::pm_pif3d{T}, N::Int )
+function test_eval_basis(pm::pm_pif3d{T}, N::Int ) where {T}
   psin=zeros(Complex{Float64},pm.N1,pm.N2,pm.N3 )
   psin2=zeros(Complex{Float64},pm.N1,pm.N2,pm.N3 )
   maxerr::T=0.0
@@ -1568,13 +1568,13 @@ function test_eval_basis{T}(pm::pm_pif3d{T}, N::Int )
 end
 
 
-function integrate_Hp_boris_exp{T}(self::pm_pif3d{T},x1n::Array{T,1},x2n::Array{T,1},
+function integrate_Hp_boris_exp(self::pm_pif3d{T},x1n::Array{T,1},x2n::Array{T,1},
                        x3n::Array{T,1},
                        v1n::Array{T,1},v2n::Array{T,1}, v3n::Array{T,1},
                       qn::Array{T,1}, mn::Array{T,1},wn::Array{T,1},
           J1::Array{Complex{T},3},J2::Array{Complex{T},3},J3::Array{Complex{T},3},
           B1::Array{Complex{T},3},B2::Array{Complex{T},3}, B3::Array{Complex{T},3},
-          dtA::T,dtB::T,async::Bool=false)
+          dtA::T,dtB::T,async::Bool=false) where {T}
 
           return integrate_Hp_boris_exp(self, x1n,x2n,x3n,
                        v1n,v2n,v3n,qn,mn,wn,
@@ -1582,24 +1582,24 @@ function integrate_Hp_boris_exp{T}(self::pm_pif3d{T},x1n::Array{T,1},x2n::Array{
 end
 
 
-function integrate_Hp_boris_exp{T}(self::pm_pif3d{T},x1n::Array{T,1},x2n::Array{T,1},
+function integrate_Hp_boris_exp(self::pm_pif3d{T},x1n::Array{T,1},x2n::Array{T,1},
                        x3n::Array{T,1},
                        v1n::Array{T,1},v2n::Array{T,1}, v3n::Array{T,1},
                       qn::Array{T,1}, mn::Array{T,1},wn::Array{T,1},
           J1::Array{Complex{T},3},J2::Array{Complex{T},3},J3::Array{Complex{T},3},
           B1::Array{Complex{T},3},B2::Array{Complex{T},3}, B3::Array{Complex{T},3},
-          dtA::Array{T,1},dtB::Array{T,1},async::Bool=false)
+          dtA::Array{T,1},dtB::Array{T,1},async::Bool=false) where {T}
   Np::Int=length(x1n)
   @assert length(dtA)==length(dtB)
   Ndt::Int=length(dtA)
 
-  psi1=Array{Complex{T}}(self.N1,self.N2,self.N3)
-  psi0=Array{Complex{T}}(self.N1,self.N2,self.N3)
+  psi1=Array{Complex{T}}(undef,self.N1,self.N2,self.N3)
+  psi0=Array{Complex{T}}(undef,self.N1,self.N2,self.N3)
 
 
   K1,K2,K3=getK(self)
 
-  vol::T=1./(self.L1*self.L2*self.L3)
+  vol::T=1 ./(self.L1*self.L2*self.L3)
 
 
 
@@ -1675,7 +1675,7 @@ function integrate_Hp_boris_exp{T}(self::pm_pif3d{T},x1n::Array{T,1},x2n::Array{
 end
 
 
-function integrate_vxB{T}(v1::T,v2::T,v3::T,b1::T,b2::T,b3::T,q::T,m::T,dt::T)
+function integrate_vxB(v1::T,v2::T,v3::T,b1::T,b2::T,b3::T,q::T,m::T,dt::T) where {T}
   b::T=sqrt(b1^2 + b2.^2 + b3^2) # Norm of magnetic field
 
   if b==0
@@ -1697,32 +1697,32 @@ function integrate_vxB{T}(v1::T,v2::T,v3::T,b1::T,b2::T,b3::T,q::T,m::T,dt::T)
         (b1.*b3.*(1-cosa) - b2.*sina).*v3
 
     v2_= (b1.*b2.*(1 - cosa) - b3.*sina).*v1+
-        (b2.^2.*(1 - cosa) + cosa).*v2 +
+        (b2.^2 .*(1 - cosa) + cosa).*v2 +
         (b2.*b3.*(1 - cosa) + b1.*sina).*v3
 
     v3_=(b1*b3*(1 - cosa) + b2*sina)*v1+
         (b3*b3*(1 - cosa) - b1*sina)*v2+
-        (b3^2*(1 - cosa) + cosa)*v3
+        (b3^2 .*(1 - cosa) + cosa)*v3
 
   return v1_,v2_,v3_
 
   end
 end
 
-@inbounds function integrate_vxB{T}(self::pm_pif3d{T}, B1::Array{Complex{T},3},
+@inbounds function integrate_vxB(self::pm_pif3d{T}, B1::Array{Complex{T},3},
                           B2::Array{Complex{T},3},  B3::Array{Complex{T},3},
                               x1n::Array{T,1},x2n::Array{T,1}, x3n::Array{T,1},
                         v1n::Array{T,1},v2n::Array{T,1}, v3n::Array{T,1},
                               qn::Array{T,1}, mn::Array{T,1},
-                                         dt::T)
+                                         dt::T) where {T}
 
   Np::Int=length(x1n)
   @assert Np==length(x2n)
   @assert Np==length(x3n)
 
-  psi1=Array{Complex{T}}(self.N1)
-  psi2=Array{Complex{T}}(self.N2)
-  psi3=Array{Complex{T}}(self.N3)
+  psi1=Array{Complex{T}}(undef,self.N1)
+  psi2=Array{Complex{T}}(undef,self.N2)
+  psi3=Array{Complex{T}}(undef,self.N3)
   k1::T=2*pi/self.L1
   k2::T=2*pi/self.L2
   k3::T=2*pi/self.L3
@@ -1763,38 +1763,38 @@ end
 
 
 
-function integrate_Hp_split_sym{T}(self::pm_pif3d{T},x1n::Array{T,1},x2n::Array{T,1},
+function integrate_Hp_split_sym(self::pm_pif3d{T},x1n::Array{T,1},x2n::Array{T,1},
                        x3n::Array{T,1},
                        v1n::Array{T,1},v2n::Array{T,1}, v3n::Array{T,1},
                       qn::Array{T,1}, mn::Array{T,1},wn::Array{T,1},
           J1::Array{Complex{T},3},J2::Array{Complex{T},3},J3::Array{Complex{T},3},
           B1::Array{Complex{T},3},B2::Array{Complex{T},3}, B3::Array{Complex{T},3},
-          dtA::Array{T,1},dtB::Array{T,1})
+          dtA::Array{T,1},dtB::Array{T,1}) where {T}
   Np::Int=length(x1n)
   @assert length(dtA)==length(dtB)
 
-  psi1=Array{Complex{T}}(self.N1,self.N2,self.N3)
-  psi0=Array{Complex{T}}(self.N1,self.N2,self.N3)
+  psi1=Array{Complex{T}}(undef,self.N1,self.N2,self.N3)
+  psi0=Array{Complex{T}}(undef,self.N1,self.N2,self.N3)
 
-  psix1=Array{Complex{T}}(self.N1)
-  psix2=Array{Complex{T}}(self.N2)
-  psix3=Array{Complex{T}}(self.N3)
+  psix1=Array{Complex{T}}(undef,self.N1)
+  psix2=Array{Complex{T}}(undef,self.N2)
+  psix3=Array{Complex{T}}(undef,self.N3)
 
   #Fourier stem function Integral
-  DK1=Array{Complex{T}}(self.N1)
+  DK1=Array{Complex{T}}(undef,self.N1)
   DK1[:]=getK(self,1)
-  DK1=1./(im*DK1)
+  DK1=1 ./(im*DK1)
   DK1[self.N1n]=0.0
-  DK2=Array{Complex{T}}(self.N2)
+  DK2=Array{Complex{T}}(undef,self.N2)
   DK2[:]=getK(self,2)
-  DK2=1./(im*DK2)
+  DK2=1 ./(im*DK2)
   DK2[self.N2n]=0.0
-  DK3=Array{Complex{T}}(self.N3)
+  DK3=Array{Complex{T}}(undef,self.N3)
   DK3[:]=getK(self,3)
-  DK3=1./(im*DK3)
+  DK3=1 ./(im*DK3)
   DK3[self.N3n]=0.0
 
-  vol::T=1./(self.L1*self.L2*self.L3)
+  vol::T=1 ./(self.L1*self.L2*self.L3)
 
   for pdx=1:Np
     eval_basis(self,x1n[pdx],x2n[pdx],x3n[pdx],psi0)
@@ -1979,7 +1979,7 @@ end
 
 
 # Cross product with matrices
-function cross!{T}(v::Array{T,1},w::Array{T,2})
+function cross!(v::Array{T,1},w::Array{T,2}) where {T}
   N=size(w,2)
   @simd for idx=1:N
     w[:,idx]=cross(v,w[:,idx])
@@ -1987,7 +1987,7 @@ function cross!{T}(v::Array{T,1},w::Array{T,2})
   return w
 end
 
-function cross!{T}(w::Array{T,2},v::Array{T,1})
+function cross!(w::Array{T,2},v::Array{T,1}) where {T}
   N=size(w,2)
   @simd for idx=1:N
     w[:,idx]=cross(w[:,idx],v)
@@ -2007,29 +2007,29 @@ end
 
 
 
-function skew3{T}(v::Array{T,1})
+function skew3(v::Array{T,1}) where {T}
   return [0 -v[3] v[2];v[3] 0 -v[1];-v[2] v[1] 0]
 end
 
-function integrate_Hp_midpoint{T}(self::pm_pif3d{T},x1n::Array{T,1},x2n::Array{T,1},
+function integrate_Hp_midpoint(self::pm_pif3d{T},x1n::Array{T,1},x2n::Array{T,1},
                        x3n::Array{T,1},
                        v1n::Array{T,1},v2n::Array{T,1}, v3n::Array{T,1},
                       qn::Array{T,1}, mn::Array{T,1},wn::Array{T,1},
           J1::Array{Complex{T},3},J2::Array{Complex{T},3},J3::Array{Complex{T},3},
-          B1::Array{Complex{T},3},B2::Array{Complex{T},3}, B3::Array{Complex{T},3}, dt::T)
+          B1::Array{Complex{T},3},B2::Array{Complex{T},3}, B3::Array{Complex{T},3}, dt::T) where {T}
   Np::Int=length(x1n)
 
-  psi1=Array{Complex{T}}(self.N1,self.N2,self.N3)
-  psi0=Array{Complex{T}}(self.N1,self.N2,self.N3)
+  psi1=Array{Complex{T}}(undef,self.N1,self.N2,self.N3)
+  psi0=Array{Complex{T}}(undef,self.N1,self.N2,self.N3)
 
-  psix1=Array{Complex{T}}(self.N1)
-  psix2=Array{Complex{T}}(self.N2)
-  psix3=Array{Complex{T}}(self.N3)
+  psix1=Array{Complex{T}}(undef,self.N1)
+  psix2=Array{Complex{T}}(undef,self.N2)
+  psix3=Array{Complex{T}}(undef,self.N3)
 
   #Fourier stem function Integral
   K1,K2,K3=getK(self)
 
-  vol::T=1./(self.L1*self.L2*self.L3)
+  vol::T=1 ./(self.L1*self.L2*self.L3)
 
   Bn=Array(T,3)
   x05=Array(T,3)
@@ -2304,7 +2304,7 @@ function to_grid(self::pm_pif3d, scalar_fun)
     x2=reshape(collect(0:N[2]-1)*dx[2],1,N[2],1 )
     x3=reshape(collect(0:N[3]-1)*dx[3],1,1,N[3] )
 
-    coefs=fft(scalar_fun(x1,x2,x3).+0.*x1.+0.*x2.+0.*x3,1:3)[
+    coefs=fft(scalar_fun(x1,x2,x3).+0 .*x1.+0 .*x2.+0 .*x3,1:3)[
                    (1:1:self.Nx1+1),
             [ N[2]-(self.Nx2-1):1:N[2];1:1:self.Nx2+1 ],
             [ N[3]-(self.Nx3-1):1:N[3];1:1:self.Nx3+1 ] ]/prod(N);

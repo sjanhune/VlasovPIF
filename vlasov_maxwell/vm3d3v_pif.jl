@@ -1,11 +1,12 @@
 # 6D Vlasov - Poisson Single Species
 
 
-include("pif_tools.jl")
-include("particle_sampling.jl")
-importall pif
+include("./pif_tools.jl")
+include("./particle_sampling.jl")
+# importall pif
+using .pif
+using .psmp
 
-using psmp
 using ProgressMeter
 
 
@@ -69,15 +70,15 @@ L3=2*pi/k
 
 
 # Initial condition for one species
-f0(x1,x2,x3,v1,v2,v3)=((1+ eps*sin.(k*x1)).*
-    exp.(- (v1.^2./sigma1^2 + v3.^2/sigma3^2)/2 ).*
-    (delta*exp.(-(v2-v01).^2/2/sigma2.^2) +
-    (1-delta)*exp.( - (v2-v02).^2/2/sigma2^2))*
+f0(x1,x2,x3,v1,v2,v3)=((1. .+ eps*sin.(k*x1)).*
+    exp.(- (v1.^2 ./sigma1^2 + v3.^2 ./sigma3^2)/2 ).*
+    (delta*exp.(-(v2 .-v01).^2/2/sigma2.^2) +
+    (1-delta)*exp.( - (v2 .-v02).^2/2/sigma2^2))*
     (2*pi)^(-1.5))/sigma3/sigma1/sigma2
 
-g0(x1,x2,x3,v1,v2,v3)=exp.(-v1.^2./sigma1^2/2 -v3.^2./sigma3^2/2).*
-    (delta*exp.(-(v2-v01).^2/2/sigma2.^2) +
-    (1-delta)*exp.( - (v2-v02).^2/2/sigma2^2))*
+g0(x1,x2,x3,v1,v2,v3)=exp.(-v1.^2 ./sigma1^2/2 -v3.^2 ./sigma3^2/2).*
+    (delta*exp.(-(v2 .-v01).^2/2/sigma2.^2) +
+    (1-delta)*exp.( - (v2 .-v02).^2/2/sigma2^2))*
     (2*pi)^(-1.5)/sigma3/sigma1/sigma2/L1/L2/L3;
 
 # x1n,x2n,x3n,v1n,v2n,v3n=psmp.uniform_6d(Np,4)
@@ -102,11 +103,12 @@ gn=g0(x1n,x2n,x3n,v1n,v2n,v3n)
 import OrdinaryDiffEq: McAte2ConstantCache, McAte8ConstantCache
 # Symmetric composition
 dt_SS=McAte2ConstantCache(Float64,Float64) #
-SS_len=Int(length(fieldnames(dt_SS))/2)
-dtA=Array{Float64}(SS_len)
+dt_SS_types = typeof(dt_SS)
+SS_len=Int(length(fieldnames(dt_SS_types))/2)
+dtA=Array{Float64}(undef,SS_len)
 dtB=similar(dtA)
 for n=1:SS_len
-  eval(parse("dtA[$n]=dt_SS.a$n; dtB[$n]=dt_SS.b$n;"))
+  eval(Meta.parse("dtA[$n]=dt_SS.a$n; dtB[$n]=dt_SS.b$n;"))
 end
 # dtA=0.5;dtB=0.5; # Strang splitting
 
@@ -116,8 +118,8 @@ pm=pm_pif3d(Nx1,Nx2,Nx3,L1,L2,L3)
 
 print( pm.N1*pm.N2*pm.N3 )
 # Fields
-rho=Array{Complex{Float64}}(pm.N1,pm.N2,pm.N3)
-Phi=Array{Complex{Float64}}(pm.N1,pm.N2,pm.N3)
+rho=Array{Complex{Float64}}(undef,pm.N1,pm.N2,pm.N3)
+Phi=Array{Complex{Float64}}(undef,pm.N1,pm.N2,pm.N3)
 E1=similar(Phi);E2=similar(Phi);E3=similar(Phi)
 B1=similar(Phi);B2=similar(Phi);B3=similar(Phi)
 
@@ -140,10 +142,10 @@ rho=accum_osde(pm,x1n,x2n,x3n, wn.*qn)./Np
 solve_poisson!(pm,rho,Phi)
 E1,E2,E3=gradient(pm,-Phi)
 #Initial electric field
-B1[:]=0;B2[:]=0;B3[:]=0
+B1[:].=0.;B2[:].=0.;B3[:].=0.;
 # Initial magnetic field
-B3[pm.K1.==k,pm.K2.==0.,pm.K3.==0.]=betar + im*betai
-B3[pm.K1.==-k,pm.K2.==0.,pm.K3.==0.]=betar - im*betai
+B3[pm.K1.==k,pm.K2.==0.,pm.K3.==0.].=betar + im*betai
+B3[pm.K1.==-k,pm.K2.==0.,pm.K3.==0.].=betar - im*betai
 B1[pm.N1n,pm.N2n,pm.N3n]=B0[1]
 B2[pm.N1n,pm.N2n,pm.N3n]=B0[2]
 B3[pm.N1n,pm.N2n,pm.N3n]=B0[3]
@@ -165,7 +167,7 @@ Ekin=zeros(DTYPE,Nt,3)
 Momentum=zeros(DTYPE,Nt,3)
 kineticenergy=zeros(DTYPE,Nt)
 ttime=collect((0:Nt-1)*dt)
-tic()
+# @time
 using ProgressMeter
 # pg = Progress(10, 1,"Vlasov")
 # for tdx=1:10
@@ -190,7 +192,7 @@ using ProgressMeter
 
 # @time integrate_Hp_split_sym(pm,x1n,x2n,x3n,v1n,v2n,v3n,qn,mn,wn,
 #                                    J1,J2,J3,B1,B2,B3,dt2/2,dt2/2)
-tic()
+# tic()
 @showprogress 1 "Vlasov-Maxwell 6D" for tdx=1:Nt
   Bpot[tdx,1]=L2norm(pm,B1)/2.
   Bpot[tdx,2]=L2norm(pm,B2)/2.
@@ -198,9 +200,9 @@ tic()
   Epot[tdx,1]=L2norm(pm,E1)/2.
   Epot[tdx,2]=L2norm(pm,E2)/2.
   Epot[tdx,3]=L2norm(pm,E3)/2.
-  Ekin[tdx,1]=sum(v1n.^2.*wn)/Np/2.
-  Ekin[tdx,2]=sum(v2n.^2.*wn)/Np/2.
-  Ekin[tdx,3]=sum(v3n.^2.*wn)/Np/2.
+  Ekin[tdx,1]=sum(v1n.^2 .*wn)/Np/2.
+  Ekin[tdx,2]=sum(v2n.^2 .*wn)/Np/2.
+  Ekin[tdx,3]=sum(v3n.^2 .*wn)/Np/2.
   Momentum[tdx,1]=sum(v1n.*wn)/Np + (dot(pm,E2,B3)-dot(pm,E3,B2))
   Momentum[tdx,2]=sum(v2n.*wn)/Np + (dot(pm,E3,B1)-dot(pm,E1,B3))
   Momentum[tdx,3]=sum(v3n.*wn)/Np + (dot(pm,E1,B2)-dot(pm,E2,B1))
@@ -225,7 +227,7 @@ tic()
     integrate_H_B(pm, E1,E2,E3,B1,B2,B3,c,dtA[gdx]*dt)
     end
 
-    J1[:]=0.0;J2[:]=0.0;J3[:]=0.0 #mandatory
+    J1[:].=0.0;J2[:].=0.0;J3[:].=0.0 #mandatory
    # Hamiltonian splitting
    integrate_Hp_split_sym(pm,x1n,x2n,x3n,v1n,v2n,v3n,qn,mn,wn,
                     J1,J2,J3,B1,B2,B3,[dtA[gdx]*dt],[dtB[gdx]*dt])
@@ -242,9 +244,9 @@ tic()
     # J3[:,:,pm.N3n].=0
 
      #
-     J1[pm.N1n,pm.N2n,pm.N3n].=0
-     J2[pm.N1n,pm.N2n,pm.N3n].=0
-     J3[pm.N1n,pm.N2n,pm.N3n].=0
+     J1[pm.N1n,pm.N2n,pm.N3n]=0
+     J2[pm.N1n,pm.N2n,pm.N3n]=0
+     J3[pm.N1n,pm.N2n,pm.N3n]=0
     E1.-=J1/Np;E2.-=J2/Np; E3.-=J3/Np
 
     if gdx==length(dtB)
@@ -261,7 +263,6 @@ tic()
   #x1n=mod.(x1n,L1);  x2n=mod.(x2n,L2);  x3n=mod.(x3n,L3)
 
 end
-toc()
 
 # T=Float64;pdx=1;
 #
@@ -300,33 +301,42 @@ print("Gauss Error: ",gauss_error(pm,rho,E1,E2,E3),"\n")
 
 
 
-energy=sum(Epot,2)+sum(Ekin,2)+sum(Bpot,2)
+energy=sum(Epot,dims=2)+sum(Ekin,dims=2)+sum(Bpot,dims=2)
 
 using PyPlot
-figure()
-semilogy(ttime,abs.((energy-energy[1])./energy[1]))
+# ioff()
+fig=figure()
+ax=gca()
+semilogy(ttime,abs.((energy .-energy[1])./energy[1]))
 grid()
 ylabel("rel. energy error")
 xlabel("time ")
 
+fig.canvas.draw()
+
 # plot(ttime, Ekin[:,1]+Epot[:,1])
 #
-figure()
+fig=figure()
+ax=gca()
  semilogy(ttime, Epot)
- figure()
+fig.canvas.draw()
+fig= figure()
  semilogy(ttime, Bpot)
+fig.canvas.draw()
 
 # figure()
 # semilogy(ttime, Bpot)
 
 moment_error=abs.(Momentum[:,:].-reshape(Momentum[1,:],1,3));
 
-figure()
+fig=figure()
+ax=gca()
 semilogy(ttime,moment_error)
 xlabel("time "); grid()
 ylabel("absolute momentum error")
 
-
+fig.canvas.draw()
+gcf()
 
 # print(test_eval_basis(pm,10000))
 #

@@ -4,18 +4,18 @@ export weibel_streaming
 using Sobol
 
 
-function uniform_6d(Np::Int, nskip=0,T=Float64)
-  x1n=Array{T}(Np)
-  x2n=Array{T}(Np)
-  x3n=Array{T}(Np)
-  v1n=Array{T}(Np)
-  v2n=Array{T}(Np)
-  v3n=Array{T}(Np)
+function uniform_6d(Np::Int, nskip=0, T=Float64)
+  x1n=Array{T}(undef,Np)
+  x2n=Array{T}(undef,Np)
+  x3n=Array{T}(undef,Np)
+  v1n=Array{T}(undef,Np)
+  v2n=Array{T}(undef,Np)
+  v3n=Array{T}(undef,Np)
 
   sob = Sobol.SobolSeq(6)
   Sobol.skip(sob, 4+nskip) # Skip some entries
   for i=1:Np
-    x1n[i],x2n[i],x3n[i],v1n[i],v2n[i],v3n[i]=Sobol.next(sob)
+    x1n[i],x2n[i],x3n[i],v1n[i],v2n[i],v3n[i]=Sobol.next!(sob)
   end
 
   return x1n,x2n,x3n,v1n,v2n,v3n
@@ -24,9 +24,9 @@ end
 import SpecialFunctions: erfinv
 # Sampling
 
-function maxwellian_6d{T}(Np::Int, nskip::Int=0,  L::Array{T,1}=ones(T,3),
+function maxwellian_6d(Np::Int, nskip::Int=0,  L::Array{T,1}=ones(T,3),
             sigma::Array{T,1}=ones(T,3),
-            mu::Array{T,1}=zeros(T,3) )
+            mu::Array{T,1}=zeros(T,3) ) where {T}
 
             x1n,x2n,x3n,v1n,v2n,v3n=uniform_6d(Np,nskip)
 
@@ -36,25 +36,25 @@ function maxwellian_6d{T}(Np::Int, nskip::Int=0,  L::Array{T,1}=ones(T,3),
 end
 
 
-function maxwellian_6d{T}(x1n,x2n,x3n,v1n,v2n,v3n,
+function maxwellian_6d(x1n,x2n,x3n,v1n,v2n,v3n,
                L::Array{T,1}=ones(T,3),
               sigma::Array{T,1}=ones(T,3),
-              mu::Array{T,1}=zeros(T,3) )
+              mu::Array{T,1}=zeros(T,3) ) where {T}
               x1n.*=L[1]
               x2n.*=L[2]
               x3n.*=L[3]
 
-              norminv=p->sqrt(2.).*erfinv.(2.*p - 1.0)
+              norminv=p->sqrt(2.).*erfinv.(2. .*p .- 1.0)
 
               v1n.=norminv(v1n).*sigma[1].+mu[1]
               v2n.=norminv(v2n).*sigma[2].+mu[2]
               v3n.=norminv(v3n).*sigma[3].+mu[3]
 
   #Probability density
-  p(x1,x2,x3,v1,v2,v3)=exp.(- (v1.-mu[1]).^2./sigma[1]^2/2.
-                        .-(v2.-mu[2]).^2./sigma[2]^2/2.
-                       .-(v3.-mu[3]).^2./sigma[3]^2/2.  ).*
-                   (2*pi)^(-1.5)/(prod(sigma)*prod(L))
+  p(x1,x2,x3,v1,v2,v3)=exp.(- (v1.-mu[1]).^2 ./sigma[1]^2/2.
+                        .-(v2.-mu[2]).^2 ./sigma[2]^2/2.
+                       .-(v3.-mu[3]).^2 ./sigma[3]^2/2.  ).*
+                   (2. *pi)^(-1.5)/(prod(sigma)*prod(L))
 
   return p
 end
@@ -65,11 +65,11 @@ end
 # end
 
 # input uniformly distributed
-function maxwellian_stream_3d{T}(v1n,v2n,v3n, alpha::Array{T,1},
-                  sigma::Array{T,2},mu::Array{T,2})
+function maxwellian_stream_3d(v1n,v2n,v3n, alpha::Array{T,1},
+                  sigma::Array{T,2},mu::Array{T,2}) where {T}
   Ns::Int=length(alpha) # number of streams
   Np::Int=length(v1n)
-  norminv=p->sqrt(2.).*erfinv.(2.*p - 1.0)
+  norminv=p->sqrt(2.).*erfinv.(2. .*p .- 1.0)
   v1n.=norminv(v1n)
   v2n.=norminv(v2n)
   v3n.=norminv(v3n)
@@ -89,9 +89,9 @@ function maxwellian_stream_3d{T}(v1n,v2n,v3n, alpha::Array{T,1},
     fun=similar(v1)
     fun.=0
      for ndx=1:Ns
-       fun+=exp.(- (v1-mu[1,ndx]).^2./sigma[1,ndx]^2/2.
-      -(v2-mu[2,ndx]).^2./sigma[2,ndx]^2/2.
-     -(v3-mu[3,ndx]).^2./sigma[3,ndx]^2/2.  )*
+       fun+=exp.(- (v1-mu[1,ndx]).^2 ./sigma[1,ndx]^2/2.
+      -(v2-mu[2,ndx]).^2 ./sigma[2,ndx]^2/2.
+     -(v3-mu[3,ndx]).^2 ./sigma[3,ndx]^2/2.  )*
          (2*pi)^(-1.5)/prod(sigma[:,ndx])
      end
     return fun
@@ -108,9 +108,9 @@ Linear Landau Damping (Langmuir Wave)
 # Arguments
 - epsilon: default 0.5 for strong landau damping, set 0.05 for weak (linear)
 """
-function landau{T}(x1n::Array{T,1},x2n,x3n,v1n,v2n,v3n; epsilon=0.5,
+function landau(x1n::Array{T,1},x2n,x3n,v1n,v2n,v3n; epsilon=0.5,
                    sigma=ones(T,3),
-                   k::Array{T,1}=[0.5,0.5,0.5], q=-1., m=1.)
+                   k::Array{T,1}=[0.5,0.5,0.5], q=-1., m=1.) where {T}
 
     L=ones(T,3)*2*pi./k;
     g=maxwellian_6d(x1n,x2n,x3n,v1n,v2n,v3n,L,sigma, zeros(T,3))
@@ -128,9 +128,9 @@ end
 """
 Jeans instability
 """
-function jeans{T}(x1n::Array{T,1},x2n,x3n,v1n,v2n,v3n; epsilon=0.1,
+function jeans(x1n::Array{T,1},x2n,x3n,v1n,v2n,v3n; epsilon=0.1,
                    sigma=ones(T,3),
-                   k::Array{T,1}=[0.5,0.5,0.5], q=-1.,m=-1.)
+                   k::Array{T,1}=[0.5,0.5,0.5], q=-1.,m=-1.) where {T}
     @assert m<0
     landau(x1n,x2n,x3n,v1n,v2n,v3n, epsilon=epsilon,sigma=sigma,k=k,q=q,m=m)
 end
@@ -138,10 +138,10 @@ end
 
 
 "Weibel instability in six dimensions"
-function weibel{T}(x1n,x2n,x3n,v1n,v2n,v3n;
+function weibel(x1n,x2n,x3n,v1n,v2n,v3n;
                    epsilon=1e-3, beta=-1e-3 ,
                    sigma= [ 0.02/sqrt(2), 0.02*sqrt(12/2),0.02*sqrt(12/2)],
-                   k::Array{T,1}=[1.25,1.25,1.25])
+                   k::Array{T,1}=[1.25,1.25,1.25]) where {T}
   L=ones(T,3)*2*pi./k;
 
   g=maxwellian_6d(x1n,x2n,x3n,v1n,v2n,v3n,L,sigma, zeros(T,3))
@@ -162,11 +162,11 @@ end
 
 
 "Weibel streaming instability in six dimensions"
-function weibel_streaming{T}(x1n::Array{T,1},x2n,x3n,v1n,v2n,v3n;
+function weibel_streaming(x1n::Array{T,1},x2n,x3n,v1n,v2n,v3n;
                    epsilon::T=T(0), beta=-im*1e-3,
                    sigma::Array{T,1}= 0.1./sqrt(2).*ones(T,3),
                    k::Array{T,1}=[0.2;0.2;0.2],
-                   delta::T=(1./6.0) )
+                   delta::T=(1. /6.0) ) where {T}
   L=ones(T,3)*2*pi./k;
   x1n.*=L[1]
   x2n.*=L[2]
@@ -176,7 +176,7 @@ function weibel_streaming{T}(x1n::Array{T,1},x2n,x3n,v1n,v2n,v3n;
   v02=-0.1;
 
 
-  gv=maxwellian_stream_3d(v1n,v2n,v3n, [delta;1.-delta],
+  gv=maxwellian_stream_3d(v1n,v2n,v3n, [delta;1. -delta],
                        sigma.*ones(1,2),
                         [ [0. 0.]; [v01 v02]; [0. 0.]  ]  )
 
@@ -202,17 +202,17 @@ Two dimensional periodic Kelvin Helmholtz instability
      chose k<1 for instability in corresponding dimension
      domain stability in 2-3
 """
-function KelvinHelmholtz{T}(x1n::Array{T,1},x2n,x3n,v1n,v2n,v3n;
+function KelvinHelmholtz(x1n::Array{T,1},x2n,x3n,v1n,v2n,v3n;
                    epsilon::T=0.015,
                    k::Array{T,1}=[0.4;1.;1.],
-                   q=-1.,m=1., B0::Array{T,1}=[0.;0.;10.])
+                   q=-1.,m=1., B0::Array{T,1}=[0.;0.;10.]) where {T}
 
   L=ones(T,3)*2*pi./k;
 
   g=maxwellian_6d(x1n,x2n,x3n,v1n,v2n,v3n,L)
 
-f(x1,x2,x3,v1,v2,v3)=(1+ sin.(k[2].*x2)+epsilon.*cos.(k[1].*x1) ).*
-                        exp.(-0.5.*(v1.^2.+v2.^2.+v3.^2))./sqrt(2*pi).^3;
+f(x1,x2,x3,v1,v2,v3)=(1. .+ sin.(k[2].*x2)+epsilon.*cos.(k[1].*x1) ).*
+                        exp.(-0.5.*(v1.^2 .+v2.^2 .+v3.^2))./sqrt(2*pi).^3;
 
 # Default parameters
 params=Dict("dt"=>0.1/norm(B0),"tmax"=>20*norm(B0), "q"=>q, "m"=>m, "c"=>1.,
